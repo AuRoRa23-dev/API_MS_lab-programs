@@ -1,20 +1,60 @@
-// Load environment variables from .env file
 require('dotenv').config({ path: './config/.env' });
 
-const express = require('express');   // Import Express framework
-const cors = require('cors');         // Import CORS middleware
+const express = require('express');
+const cors = require('cors');
+const jwt = require('jsonwebtoken'); //v2
 
-const app = express();                // Create Express app
+const app = express();
 
-app.use(cors());                      // Enable CORS
-app.use(express.json());              // Allow server to read JSON data from request body
+app.use(cors());
 
-// Attach student routes to this base URL
-app.use('/api/students', require('./modules/student/routes'));
+app.use(express.json());
 
-const PORT = process.env.PORT || 3000;  // Read port from .env file
+/* ========================
+   VERIFY TOKEN FUNCTION V2
+======================== */
+function verifyToken(req, res, next) {
 
-// Start the server
+  const token = req.header("Authorization");
+
+  if (!token) {
+    return res.status(401).json({ message: "Access Denied" });
+  }
+
+  try {
+    jwt.verify(token, process.env.JWT_SECRET);
+    next();
+  } catch (err) {
+    res.status(400).json({ message: "Invalid Token" });
+  }
+}
+
+/* ========================
+   LOGIN ROUTE V2
+======================== */
+app.post('/login', (req, res) => {
+  const { username, password } = req.body;
+
+  if (username === "admin" && password === "1234") {
+
+    const token = jwt.sign(
+      { username: username },
+      process.env.JWT_SECRET
+    );
+
+    return res.json({ token });
+  }
+
+  res.status(401).json({ message: "Invalid credentials" });
+});
+
+/* ========================
+   PROTECT STUDENT ROUTES V2
+======================== */
+app.use('/api/students', verifyToken, require('./modules/student/routes'));
+
+const PORT = process.env.PORT || 3000;
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
