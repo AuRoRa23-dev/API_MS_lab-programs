@@ -8,9 +8,9 @@ const port = 5000;
 app.use(cors());
 app.use(express.json());
 
-/* =========================
-   MongoDB Connection to be in db.js
-========================= */
+/* 
+   MongoDB Connection
+*/
 
 mongoose.connect('mongodb://localhost:27017/Test1')
   .then(() => {
@@ -20,9 +20,9 @@ mongoose.connect('mongodb://localhost:27017/Test1')
     console.error('MongoDB connection error:', err);
   });
 
-/* =========================
-   User Schema & Model to be in model.js
-========================= */
+/* 
+   User Schema & Model 
+ */
 
 const userSchema = new mongoose.Schema({
   name: {
@@ -37,9 +37,9 @@ const userSchema = new mongoose.Schema({
 
 const User = mongoose.model('User', userSchema);
 
-/* =========================
-   Routes to be in routes.js
-========================= */
+/* 
+   Routes
+ */
 
 app.get('/', (req, res) => {
   res.send('API is working!');
@@ -58,7 +58,7 @@ app.get('/users', async (req, res) => {
 /* ===== GET User By ID ===== */
 app.get('/users/:id', async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
+    const user = await User.findById(req.params.);
 
     if (!user)
       return res.status(404).json({ message: 'User not found' });
