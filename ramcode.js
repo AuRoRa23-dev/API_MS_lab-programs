@@ -1,128 +1,69 @@
 const express = require('express');
 const cors = require('cors');
-const mongoose = require('mongoose');
+const jwt = require('jsonwebtoken');
 
 const app = express();
 const port = 5000;
 
+const SECRET_KEY = "mysecretkey";
+
 app.use(cors());
 app.use(express.json());
 
-/* 
-   MongoDB Connection
-*/
+// Sample data
+let users = [
+  { id: 1, name: 'Alice', email: 'alice@example.com' },
+  { id: 2, name: 'Bob', email: 'bob@example.com' }
+];
 
-mongoose.connect('mongodb://localhost:27017/Test1')
-  .then(() => {
-    console.log('MongoDB Connected');
-  })
-  .catch((err) => {
-    console.error('MongoDB connection error:', err);
-  });
 
-/* 
-   User Schema & Model 
- */
-
-const userSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true
-  },
-  email: {
-    type: String,
-    required: true
-  }
-}, { timestamps: true });
-
-const User = mongoose.model('User', userSchema);
-
-/* 
-   Routes
- */
-
+// Unprotected route
 app.get('/', (req, res) => {
   res.send('API is working!');
 });
 
-/* ===== GET All Users ===== */
-app.get('/users', async (req, res) => {
-  try {
-    const users = await User.find();
-    res.json(users);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
+
+// Route to generate JWT token
+app.get('/token', (req, res) => {
+
+  const token = jwt.sign(
+    { user: "demoUser" },   // payload
+    SECRET_KEY,
+    { expiresIn: '1h' }
+  );
+
+  res.json({
+    message: "Token generated successfully",
+    token: token   // showing generated token
+  });
+
 });
 
-/* ===== GET User By ID ===== */
-app.get('/users/:id', async (req, res) => {
-  try {
-    const user = await User.findById(req.params.);
 
-    if (!user)
-      return res.status(404).json({ message: 'User not found' });
+// JWT Authentication Middleware
+function authenticateToken(req, res, next) {
 
-    res.json(user);
-  } catch (err) {
-    res.status(400).json({ message: 'Invalid ID' });
-  }
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) return res.status(401).send("Token required");
+
+  jwt.verify(token, SECRET_KEY, (err, user) => {
+
+    if (err) return res.status(403).send("Invalid token");
+
+    req.user = user;
+    next();
+
+  });
+}
+
+
+// Protected route
+app.get('/users', authenticateToken, (req, res) => {
+  res.json(users);
 });
-
-/* ===== CREATE User ===== */
-app.post('/users', async (req, res) => {
-  try {
-    const newUser = new User({
-      name: req.body.name,
-      email: req.body.email
-    });
-
-    const savedUser = await newUser.save();
-    res.status(201).json(savedUser);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-/* ===== UPDATE User ===== */
-app.put('/users/:id', async (req, res) => {
-  try {
-    const updatedUser = await User.findByIdAndUpdate(
-      req.params.id,
-      {
-        name: req.body.name,
-        email: req.body.email
-      },
-      { new: true, runValidators: true }
-    );
-
-    if (!updatedUser)
-      return res.status(404).json({ message: 'User not found' });
-
-    res.json(updatedUser);
-  } catch (err) {
-    res.status(400).json({ message: 'Invalid ID' });
-  }
-});
-
-/* ===== DELETE User ===== */
-app.delete('/users/:id', async (req, res) => {
-  try {
-    const deletedUser = await User.findByIdAndDelete(req.params.id);
-
-    if (!deletedUser)
-      return res.status(404).json({ message: 'User not found' });
-
-    res.status(204).send();
-  } catch (err) {
-    res.status(400).json({ message: 'Invalid ID' });
-  }
-});
-
-/* =========================
-   Start Server
-========================= */
 
 app.listen(port, () => {
-  console.log(`Server is running at http://localhost:${port}`);
+  console.log(`Server running at http://localhost:${port}`);
 });
