@@ -3,7 +3,7 @@ const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
 
 const app = express();
-const port = 5000;
+const port = 3000;
 
 app.use(express.json());
 //configuration for swagger-jsdoc
@@ -17,7 +17,7 @@ const options = {
     },
     servers: [
       {
-        url: "http://localhost:5000"
+        url: "http://localhost:3000"
       }
     ]
   },
